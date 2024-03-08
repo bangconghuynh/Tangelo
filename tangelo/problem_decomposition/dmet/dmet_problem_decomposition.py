@@ -245,7 +245,7 @@ class DMETProblemDecomposition(ProblemDecomposition):
         elif not callable(self.electron_localization):
             raise TypeError(f"Invalid electron localization function. Expecting a function.")
 
-        # Construct orbital object.
+        # Construct orbital object (these orbitals are localised, not canonical).
         self.orbitals = helpers._orbitals(self.molecule, self.mean_field, range(self.molecule.nao_nr()), self.electron_localization, self.uhf)
 
         # TODO: remove last argument, combining fragments not supported.
@@ -253,6 +253,8 @@ class DMETProblemDecomposition(ProblemDecomposition):
 
         # Calculate the 1-RDM for the entire molecule.
         if self.molecule.spin == 0 and not self.uhf:
+            # `active_fock` is the Fock matrix in the localised MO basis.
+            # Hence, `self.onerdm_low` is the 1-RDM in the localised MO basis.
             self.onerdm_low = helpers._low_rdm_rhf(self.orbitals.active_fock, self.orbitals.number_active_electrons)
         else:
             self.onerdm_low = helpers._low_rdm_rohf_uhf(self.orbitals.active_fock_alpha,
@@ -354,15 +356,20 @@ class DMETProblemDecomposition(ProblemDecomposition):
             if self.verbose:
                 print(f"\tSCF Occupancy Eigenvalues for Fragment Number : # {i}")
 
-            # Construct bath orbitals.
+            # Construct bath orbitals in the localised MO basis.
+            # e_occupied contains either zero for the active orbitals, or occupation
+            # numbers of core orbitals (so either 2.0 or 0.0)
             bath_orb, e_occupied = helpers._fragment_bath(self.orbitals.mol_full, t_list, temp_list,
                                                           self.onerdm_low, self.virtual_orbital_threshold, self.verbose)
 
             # Obtain one particle rdm for a fragment.
+            # norb_high: number of orbitals in the active space
+            # nelec_high: number of electrons in the active space
             norb_high, nelec_high, onerdm_high = helpers._fragment_rdm(t_list, bath_orb, e_occupied,
                                                                        self.orbitals.number_active_electrons)
 
-            # Obtain one particle rdm for a fragment.
+            # Obtain integrals in the localised MO basis.
+            # The first norb_high columns of `bath_orb` give the active orbitals.
             one_ele, fock, two_ele = self.orbitals.dmet_fragment_hamiltonian(bath_orb, norb_high, onerdm_high)
 
             # Construct guess orbitals for fragment SCF calculations.

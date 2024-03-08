@@ -54,6 +54,12 @@ def dmet_fragment_bath(mol, t_list, temp_list, onerdm_low, virtual_orbital_thres
     if verbose:
         print(f"\t{e}\n")
 
+    # This also updates t_list so that after the function call, t_list = [a, b]
+    # where a is the number of fragment orbitals and b the number of bath orbitals.
+    # Bath orbitals are those that are sufficiently far away from 0 and 2.
+    # c_sorted now contains the natural orbitals of D_{env-env} sorted such that
+    # natural orbitals with occupation numbers closest to 1 (between 0 and 2)
+    # come first.
     e_sorted, c_sorted = dmet_bath_orb_sort(t_list, e, c, virtual_orbital_threshold)
 
     # Add the core contribution
@@ -116,15 +122,21 @@ def dmet_bath_orb_sort(t_list, e_before, c_before, virtual_orbital_threshold):
     """
 
     # Sort the orbital energies (Occupation of 1.0 should come first...)
+    print("e_before:")
+    for i, e in enumerate(e_before):
+        print(i, e, np.maximum(-e, e - 2.0))
     new_index = np.maximum(-e_before, e_before - 2.0).argsort()
+    print("new_index:", new_index)
 
     # Throw away some orbitals above threshold
     thresh_orb = np.sum(-np.maximum(-e_before, e_before - 2.0)[new_index] > virtual_orbital_threshold)
+    print(thresh_orb)
 
     # Determine the number of bath orbitals
     norb = min(np.sum(thresh_orb), t_list[0])
 
     t_list.append(norb)
+    print(t_list)
 
     # Sort the bath orbitals with its energies
     e_new = e_before[new_index]
@@ -158,6 +170,9 @@ def dmet_add_to_bath_orb(mol, t_list, temp_list, e_before, c_before):
     new_index = add_e.argsort()
 
     # Sort the orbitals based on its energies
+    # c_before[:, t_list[1]:] now contains core orbitals arranged in the order
+    #  fully occupied (occ = 2.0) to fully virtual (occ = 0.0).
+    # add_e contains the corresponding occupation numbers.
     c_before[:, t_list[1]:] = add_c[:, new_index]
     add_e = - add_e[new_index]
 
@@ -166,11 +181,18 @@ def dmet_add_to_bath_orb(mol, t_list, temp_list, e_before, c_before):
     e_occupied_core_orbitals = np.hstack((np.zeros([t_list[0] + t_list[1]]), add_e))
 
     # Add the core part in the orbitals
+    # More simply, c_before = scipy.linalg.block_diag(np.eye(t_list[0]), c_before)
+    # which is then reordered along axis 0 such that the identity block sits on
+    # the left of the coefficient matrix and occupies the rows that correspond
+    # to the fragment AOs.
+    # e_occupied_core_orbitals is essentially add_e but prepended with zeros for
+    # the active (fragment + bath) orbitals.
     for orb in range(0, t_list[0]):
         c_before = np.insert(c_before, orb, 0.0, axis=1)
     i_temp = 0
     for orb_total in range(0, norbital_total):
         if ((orb_total >= temp_list[0]) and (orb_total < temp_list[1])):
+            # fragment orbitals
             c_before = np.insert(c_before, orb_total, 0.0, axis=0)
             c_before[orb_total, i_temp] = 1.0
             i_temp += 1

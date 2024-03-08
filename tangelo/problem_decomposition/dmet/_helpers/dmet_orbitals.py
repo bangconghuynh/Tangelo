@@ -185,16 +185,16 @@ class dmet_orbitals:
                 (float64).
         """
 
-        # Calculate one-electron integrals.
+        # Calculate one-electron integrals in the localised MO basis.
         frag_oneint = bath_orb[:, : norb_high].T @ self.active_oneint @ bath_orb[:, : norb_high]
 
-        # Calculate the fock matrix.
+        # Calculate the fock matrix in the localised MO basis.
         density_matrix = self.localized_mo @ onerdm_core @ self.localized_mo.T
         two_int = self.pyscfscf.hf.get_veff(self.mol_full, density_matrix, 0, 0, 1)
         new_fock = self.active_oneint + (self.localized_mo.T @ two_int @ self.localized_mo)
         frag_fock = bath_orb[:, : norb_high].T @ new_fock @ bath_orb[:, : norb_high]
 
-        # Calculate the two-electron integrals.
+        # Calculate the two-electron integrals in the localised MO basis.
         coefficients = np.dot(self.localized_mo, bath_orb[:, : norb_high])
         frag_twoint = self.pyscfao2mo.outcore.full_iofree(self.mol_full, coefficients, compact=False).reshape(
                                                 norb_high,  norb_high,  norb_high,  norb_high)
