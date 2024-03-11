@@ -479,6 +479,7 @@ class DMETProblemDecomposition(ProblemDecomposition):
             if self.verbose:
                 print("\t\tFragment Number : # ", i + 1)
                 print("\t\t------------------------")
+            print("frozen orbitals:", frozen_orbitals)
 
             # TODO: Changing this into something more simple is preferable. There
             # would be an enum class with every solver in it. After this, we would
