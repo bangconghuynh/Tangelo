@@ -478,8 +478,7 @@ class DMETProblemDecomposition(ProblemDecomposition):
 
             if self.verbose:
                 print("\t\tFragment Number : # ", i + 1)
-                print("\t\t------------------------")
-            print("frozen orbitals:", frozen_orbitals)
+                print("\t\t------------------------", flush=True)
 
             # TODO: Changing this into something more simple is preferable. There
             # would be an enum class with every solver in it. After this, we would
@@ -487,6 +486,7 @@ class DMETProblemDecomposition(ProblemDecomposition):
             # FCISolver and CCSDSolver must be taken care of, but this is a PR itself.
             solver_fragment = self.fragment_solvers[i]
             solver_options = self.solvers_options[i]
+            print(f"\t\tFragment solver: {solver_fragment}", flush=True)
             if solver_fragment == "fci":
                 solver_fragment = FCISolver(dummy_mol, **solver_options)
                 solver_fragment.simulate()
@@ -540,7 +540,7 @@ class DMETProblemDecomposition(ProblemDecomposition):
             energy_temp += fragment_energy
 
             if self.verbose:
-                print(f"\t\tFragment Energy = {fragment_energy}\n\t\tNumber of Electrons in Fragment = {n_electron_frag}")
+                print(f"\t\tFragment Energy = {fragment_energy}\n\t\tNumber of Electrons in Fragment = {n_electron_frag}", flush=True)
 
         energy_temp += self.orbitals.core_constant_energy
         self.dmet_energy = energy_temp.real
@@ -548,6 +548,7 @@ class DMETProblemDecomposition(ProblemDecomposition):
         if save_results:
             self.scf_fragments = scf_fragments
 
+        print(f"\tError: {number_of_electron - self.orbitals.number_active_electrons:+.7f}", flush=True)
         return number_of_electron - self.orbitals.number_active_electrons
 
     def get_resources(self):
