@@ -368,6 +368,9 @@ class DMETProblemDecomposition(ProblemDecomposition):
             norb_high, nelec_high, onerdm_high = helpers._fragment_rdm(t_list, bath_orb, e_occupied,
                                                                        self.orbitals.number_active_electrons)
 
+            if self.verbose:
+                print(f"\tNumber of active electrons in fragment {i}: {nelec_high} in {norb_high}")
+
             # Obtain integrals in the localised MO basis.
             # The first norb_high columns of `bath_orb` give the active orbitals.
             one_ele, fock, two_ele = self.orbitals.dmet_fragment_hamiltonian(bath_orb, norb_high, onerdm_high)
@@ -478,7 +481,8 @@ class DMETProblemDecomposition(ProblemDecomposition):
 
             if self.verbose:
                 print("\t\tFragment Number : # ", i + 1)
-                print("\t\t------------------------", flush=True)
+                print("\t\t------------------------")
+                print(f"\t\tFrozen orbitals: {frozen_orbitals}", flush=True)
 
             # TODO: Changing this into something more simple is preferable. There
             # would be an enum class with every solver in it. After this, we would
